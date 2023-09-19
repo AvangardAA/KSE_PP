@@ -10,9 +10,6 @@ char fName[256] = "";
 
 int main() 
 {
-	char hello_buf[15] = "Hello, world\n";
-	char text_buf[50];
-	printf_s(hello_buf);
 	int choice;
 
     while (1) 
