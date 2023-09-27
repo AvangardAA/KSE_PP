@@ -72,7 +72,12 @@ void searchText()
     }
 }
 
-int main()
+#pragma warning(disable : 4996)
+
+char textbuf[256] = "";
+char fName[256] = "";
+
+int main() 
 {
     int choice;
 
