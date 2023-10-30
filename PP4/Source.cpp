@@ -54,6 +54,60 @@ public:
 typedef char* (*encr)(char*, int);
 typedef char* (*decr)(char*, int);
 
+class DllClass 
+{
+public:
+    DllClass(const std::string& dllPath) 
+    {
+        slib = dlopen(dllPath.c_str(), RTLD_LAZY);
+        if (!slib) 
+        {
+            std::cerr << "load fail " << dlerror() << std::endl;
+        }
+        else 
+        {
+            encrypt = (encr)dlsym(slib, "encrypt");
+            decrypt = (decr)dlsym(slib, "decrypt");
+            if (!encrypt || !decrypt) 
+            {
+                std::cerr << "func pointer fail" << std::endl;
+                dlclose(slib);
+            }
+        }
+    }
+
+    ~DllClass() 
+    {
+        if (slib) 
+        {
+            dlclose(slib);
+        }
+    }
+
+    char* encr_internal(char* dt, int key) 
+    {
+        if (encrypt) 
+        {
+            return encrypt(dt, key);
+        }
+        return nullptr;
+    }
+
+    char* decr_internal(char* dt, int key) 
+    {
+        if (decrypt) 
+        {
+            return decrypt(dt, key);
+        }
+        return nullptr;
+    }
+
+private:
+    encr encrypt;
+    decr decrypt;
+    void* slib;
+};
+
 int main(int argc, char* argv[]) 
 {
     if (argc < 4) 
@@ -67,23 +121,7 @@ int main(int argc, char* argv[])
     std::string output = argv[3];
     int key = (argc >= 5) ? std::stoi(argv[4]) : 0;
 
-    void* slib = dlopen("./PP3.dll", RTLD_LAZY);
-
-    if (!slib) 
-    {
-        std::cerr << "load fail " << dlerror() << std::endl;
-        return 1;
-    }
-
-    encr encrypt = (encr)dlsym(slib, "encrypt");
-    decr decrypt = (decr)dlsym(slib, "decrypt");
-
-    if (!encrypt || !decrypt) 
-    {
-        std::cerr << "func pointer fail" << std::endl;
-        dlclose(slib);
-        return 1;
-    }
+    DllClass encryption("./PP3.dll");
 
     Reader* reader = new FReader();
     Writer* writer = new FWriter();
@@ -93,17 +131,17 @@ int main(int argc, char* argv[])
 
     if (mode == 1) 
     {
-        res = encrypt(const_cast<char*>(dt.c_str()), key);
+        res = encryption.encr_internal(const_cast<char*>(dt.c_str()), key);
     }
     else if (mode == 2) 
     {
-        res = decrypt(const_cast<char*>(dt.c_str()), key);
+        res = encryption.decr_internal(const_cast<char*>(dt.c_str()), key);
     }
     else if (mode == 3) 
     {
         srand(static_cast<unsigned int>(time(nullptr)));
         key = rand() % 26;
-        res = encrypt(const_cast<char*>(dt.c_str()), key);
+        res = encryption.encr_internal(const_cast<char*>(dt.c_str()), key);
 
         std::ofstream keyFile("secret.txt");
         if (keyFile.is_open()) 
@@ -111,8 +149,7 @@ int main(int argc, char* argv[])
             keyFile << "key: " << key << std::endl;
             keyFile.close();
         }
-        else 
-        {
+        else {
             std::cerr << "secret save fail" << std::endl;
         }
     }
@@ -130,6 +167,5 @@ int main(int argc, char* argv[])
     delete reader;
     delete writer;
 
-    dlclose(slib);
     return 0;
 }
