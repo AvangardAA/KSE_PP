@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
 {
     if (argc < 4) 
     {
-        std::cerr << "dummy error fail input" << std::endl;
+        std::cerr << "Correct usage: " << argv[0] << "\n<mode> (1 encrypt, 2 decrypt, 3 secret encrypt)\n<input> (input file name)\n<output> (output file name)\n<key> (key for encr./decryption)" << std::endl;
         return 1;
     }
 
